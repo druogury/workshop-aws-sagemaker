@@ -16,12 +16,6 @@ from nltk.stem import WordNetLemmatizer
 from nltk.corpus import wordnet as wn
 from nltk.stem.wordnet import WordNetLemmatizer
 
-en_stop = nltk.corpus.stopwords.words('english')
-en_stop.extend(['from', 'subject', 're', 'edu', 'use'])
-en_stop.extend(pd.read_csv("stm/stopwordsApps.txt", header=0)["stopwords"].tolist())
-en_stop.extend(pd.read_csv("stm/stopwordsEnglishBIG.txt", header=0, encoding='unicode_escape')["stopwords"].tolist())
-en_stop = set(en_stop)
-
 import spacy
 spacy.load('en')
 from spacy.lang.en import English
@@ -38,6 +32,13 @@ SRC  = PROJ + 'src/'
 
 # Mallet’s version often gives a better quality of topics
 MALLET_PATH = HOME + 'mallet-2.0.8/bin/mallet' # update this path
+
+
+en_stop = nltk.corpus.stopwords.words('english')
+en_stop.extend(['from', 'subject', 're', 'edu', 'use'])
+en_stop.extend(pd.read_csv(DATA + "stopwordsApps.txt", header=0)["stopwords"].tolist())
+en_stop.extend(pd.read_csv(DATA + "stopwordsEnglishBIG.txt", header=0, encoding='unicode_escape')["stopwords"].tolist())
+en_stop = set(en_stop)
 
 
 def jz_read(fn):
@@ -123,16 +124,27 @@ if __name__ == '__main__':
         lambda row: prepare_text_for_lda('{}\n{}\n{}\n{}'.format(
             row['title'], row['category'], row['description'], row['short_desc'])), axis=1)
 
+    dff['nb_of_tokens'] = dff['tokens'].apply(lambda lst : len(lst))
+    dff = dff[dff['nb_of_tokens'] > 0]
+    
+    BASE_NAME = DATA + 'gensim/raw_desc_{}samples'.format(len(dff))
+    # df.to_csv(BASE_NAME + ".df.bz2", compression='bz2')
+    dff.to_csv(BASE_NAME + ".dff.bz2", compression='bz2')
+
+    # save list of nb of tokens to plot distribution
+    with open(BASE_NAME + "nb_of_tokens.list", "wb") as fp:
+        pickle.dump(dff['nb_of_tokens'], fp)
+
+    stop
+    
     text_data = dff['tokens'].tolist()
     # print(text_data[:5])
     dictionary = corpora.Dictionary(text_data)
     corpus = [dictionary.doc2bow(text) for text in text_data]
     
-    BASE_NAME = DATA + 'gensim/raw_desc_{}samples'.format(len(dff))
+
     pickle.dump(corpus, open(BASE_NAME + '.corpus', 'wb'))
     dictionary.save(BASE_NAME + '.dict')
-    df.to_csv(BASE_NAME + ".df.bz2", compression='bz2')
-    dff.to_csv(BASE_NAME + ".dff.bz2", compression='bz2')    
     
     # optimal number of topics is 50 without games
     for NUM_TOPICS in [len(df['cat_key'].unique()), 100]:
