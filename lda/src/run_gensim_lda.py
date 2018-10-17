@@ -43,8 +43,15 @@ en_stop = set(en_stop)
 
 def jz_read(fn):
     with open(fn, mode="rb") as f:
-        p = Popen(['pigz', '-dc'], stdin=f, stdout=PIPE)
-        return simplejson.loads(p.communicate()[0])
+        if fn.endswith('.tar.gz'):
+            # https://serverfault.com/questions/270814/fastest-way-to-extract-tar-gz
+            # p1 = Popen(['pigz', '-dc'], stdin=f, stdout=PIPE)
+            # p2 = Popen([])
+            p = Popen(['tar', '-I', 'pigz', '-xf'], stdin=f, stdout=PIPE)
+            return simplejson.loads(p.communicate()[0])
+        else :
+            p = Popen(['pigz', '-dc'], stdin=f, stdout=PIPE)
+            return simplejson.loads(p.communicate()[0])
 
 
 def print_top_words(model, feature_names, n_top_words):
@@ -106,7 +113,7 @@ if __name__ == '__main__':
     print(1, df.head())
 
     # remove uncategorized
-    df = df[df['cat_key'] != 'UNCATEGORIZED']
+    # df = df[df['cat_key'] != 'UNCATEGORIZED']
     
     categories = sorted(df['cat_key'].unique())
     print('{} categories :'.format(len(categories)), categories)
@@ -117,7 +124,7 @@ if __name__ == '__main__':
         df = df[~ df['cat_key'].str.startswith('GAME_')]
         print(len(df))
 
-    dff = df.copy() # .iloc[:1000]
+    dff = df.copy().iloc[:1000]
     print('{} documents'.format(len(dff)))
     
     dff['tokens'] = dff.apply(
