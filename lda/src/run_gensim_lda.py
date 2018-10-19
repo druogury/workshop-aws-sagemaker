@@ -114,6 +114,8 @@ def prepare_text_for_lda(text, lemmatize=get_lemma):
     return tokens
 
     
+# https://github.com/Ogury/lab-apps-embedding/blob/master/doc2vec/src/ca_nlp_processing.py
+
 
 if __name__ == '__main__':
     # Read data    
@@ -128,13 +130,8 @@ if __name__ == '__main__':
         df = df[df['lang'] == 'en']
     except KeyError:
         df = pd.DataFrame.from_dict(raw_data, orient='index')[cols]
-    stop
-    
     
     print(tabulate(df.head(), headers='keys', tablefmt='psql'))
-    
-    # random shuffle
-    df = df.sample(frac=1, random_state=0)
 
     # remove uncategorized
     # df = df[df['cat_key'] != 'UNCATEGORIZED']
@@ -159,6 +156,9 @@ if __name__ == '__main__':
     dff = dff[dff['nb_of_tokens'] > 0]
     dff.sort_values('nb_of_tokens', inplace=True, ascending=False)
 
+    # random shuffle
+    dff = dff.sample(frac=1, random_state=0)
+    
     # keep 500000 longest texts
     dff = dff.iloc[:500000]
     
